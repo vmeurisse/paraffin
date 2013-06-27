@@ -1,0 +1,35 @@
+{
+	"name": "paraffin",
+	"version": "0.6.0",
+	"author": "Vincent Meurisse <dev@meurisse.org>",
+	"description": "Javascript tests made easy",
+	"keywords": ["test", "browser", "mocha", "node", "selenium", "remote"],
+	"homepage": "https://github.com/vmeurisse/paraffin",
+	"bugs": {
+		"url": "https://github.com/vmeurisse/paraffin/issues"
+	},
+	"dependencies": {
+		"shelljs": "0.1.x",
+		"node-static": "0.6.x",
+		"wd": "0.0.x",
+		"sauce-connect-launcher": "~0.1.3",
+		"saucelabs": "~0.0.7",
+		"mocha": "~1.8.2",
+		"istanbul": "0.1.x",
+		"async": "~0.2.8"
+	},
+	"devDependencies": {
+		"jake": "0.5.x",
+		"smpl-build-test": "0.5.x"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/vmeurisse/paraffin.git"
+	},
+	"scripts": {
+		"test": "jake test",
+		"lint": "jake lint",
+		"doc": "jake doc"
+	},
+	"main": "src/paraffin.js"
+}
