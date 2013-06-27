@@ -56,8 +56,7 @@ Remote.prototype.startSauceConnect = function(cb) {
 		username: this.config.user,
 		accessKey: this.config.key,
 		verbose: false,
-		logger: console.log,
-		no_progress: true // optionally hide progress bar
+		logger: console.log
 	};
 	var sauceConnectLauncher = require('sauce-connect-launcher');
 	var self = this;

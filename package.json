@@ -31,5 +31,6 @@
 		"lint": "jake lint",
 		"doc": "jake doc"
 	},
-	"main": "src/paraffin.js"
+	"main": "src/paraffin.js",
+	"engine": "node >= 0.8.0"
 }
