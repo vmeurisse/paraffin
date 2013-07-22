@@ -1,6 +1,6 @@
 {
 	"name": "paraffin",
-	"version": "0.6.1",
+	"version": "0.6.2",
 	"author": "Vincent Meurisse <dev@meurisse.org>",
 	"description": "Javascript tests made easy",
 	"keywords": ["test", "browser", "mocha", "node", "selenium", "remote"],
