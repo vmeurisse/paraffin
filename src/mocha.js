@@ -108,14 +108,14 @@ define(['module', '../node_modules/mocha/mocha'], function(module) {
 			iframe.style.display = 'none';
 			iframe.name = 'smplCoverageResults';
 			document.body.appendChild(iframe);
-			var input = document.createElement('input');
-			input.name = 'coverage';
-			input.value = stringify(window[COVERAGE_KEY]);
+			var ta = document.createElement('textarea');
+			ta.name = 'coverage';
+			ta.value = stringify(window[COVERAGE_KEY]);
 			var form = document.createElement('form');
 			form.method = 'post';
 			form.target = 'smplCoverageResults';
 			form.action = location.protocol + '//' + location.host + '/postResults';
-			form.appendChild(input);
+			form.appendChild(ta);
 			form.style.display = 'none';
 			document.body.appendChild(form);
 			form.submit();
