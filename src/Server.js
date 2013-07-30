@@ -11,7 +11,7 @@ var NO_KEEP_ALIVE = {
  * 
  * @param config {Object}
  * @param config.path {String} Path to use as root web folder
- * @param config.port {Number} Port to use for web server
+ * @param [config.port] {Number} Port to use for web server
  * @param [config.coverageDir] {String} Path to coverage directory. Used to write reports from browsers
  */
 var Server = function(config) {
@@ -19,19 +19,22 @@ var Server = function(config) {
 	this.coverage = null;
 };
 
-Server.prototype.start = function() {
-	console.log('starting server');
+Server.prototype.start = function(cb) {
+	console.log('starting server...');
 	var nodeStatic = require('node-static');
 	var staticServer = new nodeStatic.Server(this.config.path, {headers: NO_KEEP_ALIVE});
 	this.server = require('http').createServer(this.handleRequest.bind(this, staticServer));
-	this.server.listen(this.config.port);
+	this.server.listen(this.config.port, (function() {
+		cb(null, this.server.address());
+	}).bind(this));
 };
 
-Server.prototype.stop = function() {
+Server.prototype.stop = function(cb) {
 	if (this.server) {
 		console.log('stoping server');
 		this.server.close();
 		delete this.server;
+		cb();
 	}
 };
 

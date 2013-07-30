@@ -33,21 +33,16 @@ var Tests = function(config) {
 
 
 Tests.prototype.run = function(cb) {
-	if (this.actions.runServer) {
-		this.startServer();
-	}
-	
 	var actions = [];
 	
+	if (this.actions.runServer) actions.push(this.startServer.bind(this));
 	if (this.actions.runNodeTests) actions.push(this.runTests.bind(this, 'standard'));
 	if (this.actions.prepareCoverage) actions.push(this.prepareCoverage.bind(this));
 	if (this.actions.runNodeCoverage) actions.push(this.runTests.bind(this, 'coverage'));
 	if (this.actions.runRemote) actions.push(this.runRemote.bind(this));
+	if (this.actions.autoStop) actions.push(this.stop.bind(this));
 	
 	require('async').series(actions, function(err) {
-		if (this.actions.autoStop) {
-			this.stop();
-		}
 		if (cb) {
 			// Small delay so that all messages get time to be written to console before returning to caller 
 			setTimeout(function() {
@@ -65,12 +60,12 @@ Tests.prototype.run = function(cb) {
 	}
 };
 
-Tests.prototype.stop = function() {
+Tests.prototype.stop = function(cb) {
 	if (this.actions.coverageReport) {
 		this.coverage.report();
 	}
 	if (this.server) {
-		this.stopServer();
+		this.stopServer(cb);
 	}
 };
 
@@ -80,15 +75,23 @@ Tests.prototype.stop = function() {
  * @method startServer
  * @private
  */
-Tests.prototype.startServer = function() {
+Tests.prototype.startServer = function(cb) {
 	if (!this.server) {
 		var Server = require('./Server');
 		
 		this.server = new Server(this.config.server);
-		this.server.start();
-		if (this.config.url) {
-			console.log('server ready: ' + this.config.url);
-		}
+		this.server.start((function(err, address) {
+			if (this.config.remote && this.config.remote.url) {
+				var url = require('url');
+				var u = url.parse(this.config.remote.url);
+				if (u.port === '0') {
+					delete u.host;
+					u.port = address.port;
+					this.config.remote.url = url.format(u);
+				}
+			}
+			cb();
+		}).bind(this));
 	}
 };
 
@@ -98,10 +101,12 @@ Tests.prototype.startServer = function() {
  * @method stopServer
  * @private
  */
-Tests.prototype.stopServer = function() {
-	this.server.stop();
-	delete this.server;
-	console.log('server stoped');
+Tests.prototype.stopServer = function(cb) {
+	this.server.stop((function() {
+		delete this.server;
+		console.log('server stoped');
+		cb && cb();
+	}).bind(this));
 };
 
 Tests.prototype.runTests = function(type, cb) {
