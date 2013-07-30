@@ -1,7 +1,7 @@
 
-// This prevent the browser to keep the connection open. It allows the server to exit quickly.
-var NO_KEEP_ALIVE = {
-	Connection: 'close'
+var HTTP_HEADERS = {
+	'Connection': 'close', // Prevents the browser to keep the connection open. It allows the server to exit quickly.
+	'Cache-Control': 'no-cache' //Make sure that resources are always up-to-date
 };
 /**
  * Server used to run unit tests
@@ -22,7 +22,7 @@ var Server = function(config) {
 Server.prototype.start = function(cb) {
 	console.log('starting server...');
 	var nodeStatic = require('node-static');
-	var staticServer = new nodeStatic.Server(this.config.path, {headers: NO_KEEP_ALIVE});
+	var staticServer = new nodeStatic.Server(this.config.path, {headers: HTTP_HEADERS});
 	this.server = require('http').createServer(this.handleRequest.bind(this, staticServer));
 	this.server.listen(this.config.port, (function() {
 		cb(null, this.server.address());
@@ -54,10 +54,10 @@ Server.prototype.handleRequest = function(staticServer, request, response) {
 			if (postData.coverage) {
 				console.log('Adding coverage data for ' + (request.headers['user-agent'] || 'unknown browser'));
 				this.coverage.writeFile(postData.coverage);
-				response.writeHead(200, NO_KEEP_ALIVE);
+				response.writeHead(200, HTTP_HEADERS);
 				response.end('ok\n');
 			} else {
-				response.writeHead(400, NO_KEEP_ALIVE);
+				response.writeHead(400, HTTP_HEADERS);
 				response.end('Missing coverage data.\n');
 			}
 		}.bind(this));
