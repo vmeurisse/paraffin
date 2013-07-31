@@ -24,9 +24,9 @@ Server.prototype.start = function(cb) {
 	var nodeStatic = require('node-static');
 	var staticServer = new nodeStatic.Server(this.config.path, {headers: HTTP_HEADERS});
 	this.server = require('http').createServer(this.handleRequest.bind(this, staticServer));
-	this.server.listen(this.config.port, (function() {
+	this.server.listen(this.config.port, function() {
 		cb(null, this.server.address());
-	}).bind(this));
+	}.bind(this));
 };
 
 Server.prototype.stop = function(cb) {

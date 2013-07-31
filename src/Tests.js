@@ -80,7 +80,7 @@ Tests.prototype.startServer = function(cb) {
 		var Server = require('./Server');
 		
 		this.server = new Server(this.config.server);
-		this.server.start((function(err, address) {
+		this.server.start(function(err, address) {
 			if (this.config.remote && this.config.remote.url) {
 				var url = require('url');
 				var u = url.parse(this.config.remote.url);
@@ -91,7 +91,7 @@ Tests.prototype.startServer = function(cb) {
 				}
 			}
 			cb();
-		}).bind(this));
+		}.bind(this));
 	}
 };
 
@@ -102,11 +102,11 @@ Tests.prototype.startServer = function(cb) {
  * @private
  */
 Tests.prototype.stopServer = function(cb) {
-	this.server.stop((function() {
+	this.server.stop(function() {
 		delete this.server;
 		console.log('server stoped');
-		cb && cb();
-	}).bind(this));
+		if (cb) cb();
+	}.bind(this));
 };
 
 Tests.prototype.runTests = function(type, cb) {
