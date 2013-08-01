@@ -15,117 +15,12 @@ if (window.ActiveXObject || !window.postMessage) {
 	};
 }
 
-define(['module', '../../node_modules/mocha/mocha'], function(module) {
-	var Date = window.Date; // Save Date reference to avoid Sinon interfering
-	
-	// This reporter is a wrapper around the HTML reporter that also collect the results
-	// Result format is the advanced format described here:
-	// https://saucelabs.com/docs/javascript-unit-tests-integration
-	var Reporter = function(runner) {
-		new Mocha.reporters.HTML(runner);
-		
-		var result = {};
-		var stack = [];
-		var currentSuite = result;
-		var testStart;
-		
-		runner.on('suite', function(suite) {
-			var newSuite = {
-				description: suite.title,
-				start: new Date(),
-				passed: true
-			};
-			stack.push(newSuite);
-			if (!currentSuite.suites) currentSuite.suites = [];
-			currentSuite.suites.push(newSuite);
-			currentSuite = newSuite;
-		});
-		
-		runner.on('suite end', function() {
-			currentSuite.durationSec = (new Date() - currentSuite.start) / 1000;
-			delete currentSuite.start;
-			stack.pop();
-			var parentSuite = stack[stack.length - 1];
-			if (!currentSuite.passed && parentSuite) parentSuite.passed = false;
-			currentSuite = parentSuite;
-		});
-		
-		runner.on('test', function() {
-			testStart = new Date();
-		});
-		
-		runner.on('test end', function(test) {
-			if (!currentSuite.specs) currentSuite.specs = [];
-			var t = {
-				description: test.title,
-				durationSec: (new Date() - testStart) / 1000,
-				passed: test.state === 'passed',
-				totalCount: 1,
-				passedCount: 1,
-				failedCount: 0
-			};
-			if (!t.passed) {
-				currentSuite.passed = false;
-				t.failedCount = 1;
-				t.passedCount = 0;
-				// Format addition. Used for error reporting in the console.
-				t.mochaTest = {
-					fullTitle: test.fullTitle(),
-					err: {
-						message: test.err.message,
-						stack: test.err.stack
-					}
-				};
-			}
-			currentSuite.specs.push(t);
-		});
-		
-		runner.on('end', function() {
-			postCoverage();
-			window.mochaResults = result.suites[0];
-			delete window.mochaResults.description;
-		});
-	};
-	
-	var stringify = window.JSON && JSON.stringify || function (obj) {
-		var t = typeof obj;
-		if (t !== 'object' || obj === null) {
-			if (t === 'string') obj = '"' + obj.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
-			return '' + obj;
-		} else {
-			var json = [], arr = (obj.constructor === Array);
-			for (var k in obj) {
-				json.push((arr ? '' : stringify(k) + ':') + stringify(obj[k]));
-			}
-			return (arr ? '[' : '{') + json + (arr ? ']' : '}');
-		}
-	};
-	
-	window.smplCoverageResults = ''; //Prevent mocha to detect the iframe as new global
-	var postCoverage = function() {
-		var COVERAGE_KEY = '__coverage__';
-		if (window[COVERAGE_KEY]) {
-			// Poor man AJAX
-			var iframe = document.createElement('iframe');
-			iframe.style.display = 'none';
-			iframe.name = 'smplCoverageResults';
-			document.body.appendChild(iframe);
-			var ta = document.createElement('textarea');
-			ta.name = 'coverage';
-			ta.value = stringify(window[COVERAGE_KEY]);
-			var form = document.createElement('form');
-			form.method = 'post';
-			form.target = 'smplCoverageResults';
-			form.action = location.protocol + '//' + location.host + '/postResults';
-			form.appendChild(ta);
-			form.style.display = 'none';
-			document.body.appendChild(form);
-			form.submit();
-		}
-	};
+define(['module', './multiReporter', './testStatusReporter', './coveragePosterReporter',
+		'../../node_modules/mocha/mocha'],
+		function(module, multiReporter, TestStatusReporter, CoveragePosterReporter) {
 	
 	mocha.setup('tdd');
-	mocha.reporter(Reporter);
+	mocha.reporter(multiReporter.get(Mocha.reporters.HTML, TestStatusReporter, CoveragePosterReporter));
 	
 	// Load the CSS
 	var link = document.createElement('link');
