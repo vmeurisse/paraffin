@@ -40,16 +40,18 @@ Tests.prototype.run = function(cb) {
 	if (this.actions.prepareCoverage) actions.push(this.prepareCoverage.bind(this));
 	if (this.actions.runNodeCoverage) actions.push(this.runTests.bind(this, 'coverage'));
 	if (this.actions.runRemote) actions.push(this.runRemote.bind(this));
-	if (this.actions.autoStop) actions.push(this.stop.bind(this));
 	
 	require('async').series(actions, function(err) {
-		if (cb) {
-			// Small delay so that all messages get time to be written to console before returning to caller 
-			setTimeout(function() {
-				cb(err);
-			}, 100);
+		if (this.actions.autoStop) {
+			this.stop(function() {
+				if (cb) {
+					// Small delay so that all messages get time to be written to console before returning to caller 
+					setTimeout(function() {
+						cb(err);
+					}, 100);
+				}
+			}.bind(this));
 		}
-		
 	}.bind(this));
 	
 	
