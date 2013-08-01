@@ -16,6 +16,8 @@ if (window.ActiveXObject || !window.postMessage) {
 }
 
 define(['module', '../node_modules/mocha/mocha'], function(module) {
+	var Date = window.Date; // Save Date reference to avoid Sinon interfering
+	
 	// This reporter is a wrapper around the HTML reporter that also collect the results
 	// Result format is the advanced format described here:
 	// https://saucelabs.com/docs/javascript-unit-tests-integration
