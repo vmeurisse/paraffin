@@ -15,7 +15,7 @@ if (window.ActiveXObject || !window.postMessage) {
 	};
 }
 
-define(['module', '../node_modules/mocha/mocha'], function(module) {
+define(['module', '../../node_modules/mocha/mocha'], function(module) {
 	var Date = window.Date; // Save Date reference to avoid Sinon interfering
 	
 	// This reporter is a wrapper around the HTML reporter that also collect the results
@@ -131,7 +131,7 @@ define(['module', '../node_modules/mocha/mocha'], function(module) {
 	var link = document.createElement('link');
 	link.type = 'text/css';
 	link.rel = 'stylesheet';
-	link.href = module.uri.split('/').slice(0, -1).join('/') + '/../node_modules/mocha/mocha.css';
+	link.href = module.uri.split('/').slice(0, -1).join('/') + '/../../node_modules/mocha/mocha.css';
 	document.getElementsByTagName('head')[0].appendChild(link);
 	
 	function getQueryParam(key) {

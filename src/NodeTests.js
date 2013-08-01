@@ -29,7 +29,7 @@ NodeTests.prototype.run = function(coverage, cb) {
 	
 	if (coverage) {
 		process.env.SMPL_COVERAGE = '1';
-		reporter = require('./coverageReporter');
+		reporter = require('./mocha/coverageReporter');
 		reporter.setCoverage(coverage);
 	}
 	var mocha = new Mocha({
