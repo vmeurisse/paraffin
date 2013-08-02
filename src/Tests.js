@@ -10,9 +10,13 @@
  * @param [config.remote] {Object} config for {{#crossLink "Remote"}}{{/crossLink}}
  * @param [config.node] {Object} config for {{#crossLink "NodeTests"}}{{/crossLink}}
  * @param [config.coverage] {Object} config for {{#crossLink "Coverage"}}{{/crossLink}}
- * @param [config.manualStop] {Boolean} If true, server is not stopped automatically and coverage repport is delayed.
+ * @param [config.manualStop] {Boolean} If true, server is not stopped automatically and coverage report is delayed.
  *                            You need to manually call the stop method to end the tests.
- * 
+ * @param [config.reporter] {Array} First element is a reporter.
+ * @param config.reporter.0 {String|Function} If it's a string it should be one of the know reporters (only 'Xunit' for
+ *                          now.
+ *                          The repporter is called as a constructor with two parameters: Report and Options.
+ * @param config.reporter.1 {Object} Options for the reporter
  */
 var Tests = function(config) {
 	this.config = config;
@@ -23,7 +27,6 @@ var Tests = function(config) {
 	actions.runNodeCoverage = !!(this.config.coverage && this.config.node);
 	actions.prepareCoverage = !!this.config.coverage;
 	actions.runRemote = !!this.config.remote;
-	//actions.runRemoteCoverage = !!(this.config.remote && this.config.coverage && this.config.remote.urlCoverage);
 	actions.coverageReport = !!(this.config.coverage && this.config.server);
 	
 	var needStop = !!this.config.server;
@@ -33,6 +36,8 @@ var Tests = function(config) {
 
 
 Tests.prototype.run = function(cb) {
+	this.testStatus = {};
+	
 	var actions = [];
 	
 	if (this.actions.runServer) actions.push(this.startServer.bind(this));
@@ -68,6 +73,12 @@ Tests.prototype.stop = function(cb) {
 	}
 	if (this.server) {
 		this.stopServer(cb);
+	}
+	
+	if (this.config.reporter) {
+		var Reporter = this.config.reporter[0];
+		if (Reporter === 'Xunit') Reporter = require('./Xunit');
+		new Reporter(this.config.reporter[1], this.testStatus);
 	}
 };
 
@@ -127,7 +138,12 @@ Tests.prototype.prepareCoverage = function(cb) {
 
 Tests.prototype.runRemote = function(cb) {
 	var Remote = require('./Remote');
-	new Remote(this.config.remote).run(!!this.coverage, cb);
+	new Remote(this.config.remote).run(!!this.coverage, function(err, status) {
+		for (var key in status) {
+			this.testStatus[key] = status[key];
+		}
+		cb.apply(null, arguments);
+	}.bind(this));
 };
 
 module.exports = Tests;

@@ -320,6 +320,8 @@ Remote.prototype.getReport = function(fullReport, fullReportCoverage) {
  */
 Remote.prototype.displayResults = function() {
 	var failures = 0;
+	var report = {};
+	
 	console.log();
 	console.log();
 	console.log('**********************************');
@@ -330,6 +332,8 @@ Remote.prototype.displayResults = function() {
 	this.config.browsers.forEach(function(browser) {
 		var name = this.getBrowserName(browser);
 		var status = this.status[name];
+		
+		report[name] = status.full;
 		
 		var ok = status.simple && status.simple.passed;
 		var failed = status.simple && status.simple.failed;
@@ -360,7 +364,26 @@ Remote.prototype.displayResults = function() {
 	}, this);
 	console.log();
 	console.log();
-	if (this.cb) this.cb(failures);
+	if (this.cb) this.cb(failures, this.finalizeReport(report));
+};
+
+Remote.prototype.finalizeReport = function(report) {
+	var newReport = {
+		passed: true,
+		durationSec: 0,
+		suites: []
+	};
+	for (var key in report) {
+		if (report[key]) {
+			var suite = report[key];
+			suite.description = key;
+			newReport.suites.push(suite);
+			newReport.durationSec += suite.durationSec;
+			if (!suite.passed) newReport.passed = false;
+		}
+	}
+	
+	return newReport;
 };
 
 exports = module.exports = Remote;
