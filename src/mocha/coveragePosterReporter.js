@@ -22,21 +22,15 @@ define(function() {
 			var COVERAGE_KEY = '__coverage__'; //Coverage published by istanbul
 			if (window[COVERAGE_KEY]) {
 				// Poor man AJAX
-				var iframe = document.createElement('iframe');
-				iframe.style.display = 'none';
-				iframe.name = 'paraffinCoverageResults';
-				document.body.appendChild(iframe);
-				var ta = document.createElement('textarea');
-				ta.name = 'coverage';
-				ta.value = stringify(window[COVERAGE_KEY]);
-				var form = document.createElement('form');
-				form.method = 'post';
-				form.target = 'paraffinCoverageResults';
-				form.action = location.protocol + '//' + location.host + '/postResults';
-				form.appendChild(ta);
-				form.style.display = 'none';
-				document.body.appendChild(form);
-				form.submit();
+				var actionUrl = location.protocol + '//' + location.host + '/postResults';
+				var div = document.createElement('div');
+				div.innerHTML = '<iframe name="paraffinCoverageResults" style="display:none"></iframe>' +
+				                '<form method="post" target="paraffinCoverageResults" action="' + actionUrl + '">' +
+				                    '<textarea style="display:none" name="coverage" />' +
+				                '</form>';
+				document.body.appendChild(div);
+				div.getElementsByTagName('textarea')[0].value = stringify(window[COVERAGE_KEY]);
+				div.getElementsByTagName('form')[0].submit();
 			}
 		});
 	};
