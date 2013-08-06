@@ -1,4 +1,6 @@
 
+var colorize = require('./color').auto;
+
 /**
  * Server used to run unit tests
  * 
@@ -90,6 +92,7 @@ Tests.prototype.stop = function(cb) {
  */
 Tests.prototype.startServer = function(cb) {
 	if (!this.server) {
+		this.displayAction('Starting server...');
 		var Server = require('./Server');
 		
 		this.server = new Server(this.config.server);
@@ -103,7 +106,8 @@ Tests.prototype.startServer = function(cb) {
 					this.config.remote.url = url.format(u);
 				}
 			}
-			cb();
+			this.displayStatus(err);
+			cb(err);
 		}.bind(this));
 	}
 };
@@ -115,28 +119,37 @@ Tests.prototype.startServer = function(cb) {
  * @private
  */
 Tests.prototype.stopServer = function(cb) {
+	this.displayAction('Stopping server...');
 	this.server.stop(function() {
 		delete this.server;
-		console.log('server stoped');
+		this.displayStatus();
 		if (cb) cb();
 	}.bind(this));
 };
 
 Tests.prototype.runTests = function(type, cb) {
+	this.displayAction('Running tests...');
 	var NodeTests = require('./NodeTests');
 	var coverage = (type === 'coverage') ? this.coverage : null;
-	new NodeTests(this.config.node).run(coverage, cb);
+	new NodeTests(this.config.node).run(coverage, function(err) {
+		this.displayStatus(err);
+		cb.apply(null, arguments);
+	});
 };
 
 Tests.prototype.prepareCoverage = function(cb) {
+	this.displayAction('Preparing coverage...', true);
 	var Coverage = require('./Coverage');
 	this.coverage = new Coverage(this.config.coverage);
 	this.coverage.prepare();
 	if (this.server) this.server.setCoverage(this.coverage);
+	process.stdout.write('\n');
+	this.displayStatus();
 	cb();
 };
 
 Tests.prototype.runRemote = function(cb) {
+	this.displayAction('Running remote tests...', true);
 	var Remote = require('./Remote');
 	new Remote(this.config.remote).run(!!this.coverage, function(err, status) {
 		for (var key in status) {
@@ -144,6 +157,19 @@ Tests.prototype.runRemote = function(cb) {
 		}
 		cb.apply(null, arguments);
 	}.bind(this));
+};
+
+Tests.prototype.displayAction = function(status, newLine) {
+	while (status.length < 50) status += ' ';
+	process.stdout.write('* ' + status + (newLine ? '\n' : ''));
+};
+
+Tests.prototype.displayStatus = function(err) {
+	if (err) {
+		process.stdout.write('[ ' + colorize('red', 'fail') + ' ]\n');
+	} else {
+		process.stdout.write('[   ' + colorize('green', 'ok') + ' ]\n');
+	}
 };
 
 module.exports = Tests;

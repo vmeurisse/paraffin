@@ -67,7 +67,6 @@ Coverage.prototype.prepare = function() {
 	var instrumenter = new istanbul.Instrumenter();
 	var collector = new istanbul.Collector();
 	
-	process.stdout.write('Instrumenting files');
 	var filesPerDot = Math.ceil(files.length / 50);
 	
 	if (!this.config.filter) {
@@ -113,7 +112,6 @@ Coverage.prototype.prepare = function() {
 		}
 	}, this);
 	fs.writeFileSync(dataDir + '/baseline.json', JSON.stringify(collector.getFinalCoverage()), 'utf8');
-	process.stdout.write(' ok\n');
 };
 
 /**

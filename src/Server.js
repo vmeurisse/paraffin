@@ -20,7 +20,6 @@ var Server = function(config) {
 };
 
 Server.prototype.start = function(cb) {
-	console.log('starting server...');
 	var nodeStatic = require('node-static');
 	var staticServer = new nodeStatic.Server(this.config.path, {headers: HTTP_HEADERS});
 	this.server = require('http').createServer(this.handleRequest.bind(this, staticServer));
@@ -31,10 +30,10 @@ Server.prototype.start = function(cb) {
 
 Server.prototype.stop = function(cb) {
 	if (this.server) {
-		console.log('stoping server');
-		this.server.close();
-		delete this.server;
-		cb();
+		this.server.close(function() {
+			delete this.server;
+			cb();
+		}.bind(this));
 	}
 };
 
