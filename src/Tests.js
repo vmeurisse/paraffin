@@ -38,6 +38,7 @@ var Tests = function(config) {
 
 
 Tests.prototype.run = function(cb) {
+	var runner = {};
 	this.testStatus = {};
 	
 	var actions = [];
@@ -48,7 +49,15 @@ Tests.prototype.run = function(cb) {
 	if (this.actions.runNodeCoverage) actions.push(this.runTests.bind(this, 'coverage'));
 	if (this.actions.runRemote) actions.push(this.runRemote.bind(this));
 	
+	if (this.actions.manualStop) {
+		runner.stop = this.stop.bind(this);
+	}
 	require('async').series(actions, function(err) {
+		if (this.actions.manualStop) {
+			if (cb) {
+				cb(err, runner);
+			}
+		}
 		if (this.actions.autoStop) {
 			this.stop(function() {
 				if (cb) {
@@ -63,9 +72,7 @@ Tests.prototype.run = function(cb) {
 	
 	
 	if (this.actions.manualStop) {
-		return {
-			stop: this.stop.bind(this)
-		};
+		return runner;
 	}
 };
 
