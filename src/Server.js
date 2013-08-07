@@ -55,6 +55,14 @@ Server.prototype.setCoverage = function(coverage) {
 	}.bind(this));
 };
 
+Server.prototype.addPostHandler = function(url, cb) {
+	this.addHandler(url, function(request, response) {
+		cb(request.postData);
+		response.writeHead(200, HTTP_HEADERS);
+		response.end('ok\n');
+	});
+};
+
 Server.prototype.addHandler = function(url, cb) {
 	this.requestHandlers.push({url: url, callback: cb});
 };

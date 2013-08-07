@@ -16,8 +16,10 @@ var colorize = require('./color').auto;
  * @param [config.url] {String} Url of the tests. Used by the default `onTest` method. The parameter `coverage=true`
  *                     will be automatically added when testing coverage.
  * @param [config.onTest] {Function} You can overide the default test method. It get the following parameters:
- * @param config.onTest.browser {wd} See [API here](https://github.com/admc/wd)
- * @param config.onTest.coverage {boolean} If true, you should run the tests twice (1 for normal tests, 1 for coverage)
+ * @param config.onTest.conf {Object}
+ * @param config.onTest.conf.browser {wd} See [API here](https://github.com/admc/wd)
+ * @param config.onTest.conf.url {String} 
+ * @param config.onTest.conf.urlCoverage {String} 
  * @param config.onTest.cb {Function}
  * @param config.onTest.cb.status {Object} Status of the tests. API is the
  *                                 [advanced format here](https://saucelabs.com/docs/javascript-unit-tests-integration)
@@ -38,6 +40,7 @@ var Remote = function(config) {
 		this.tags.push('custom', '' + Math.floor(Math.random() * 100000000));
 	}
 	this.status = {};
+	this.sessions = {};
 };
 
 /**
@@ -97,18 +100,14 @@ Remote.prototype.run = function(coverage, cb) {
 	this.cb = cb;
 	this.coverage = coverage;
 	if (coverage && this.config.url) {
-		var url = require('url');
-		var u = url.parse(this.config.url);
-		u.search = (u.search ? u.search + '&' : '?') + 'coverage=true';
-		this.coverageUrl = url.format(u);
+		this.coverageUrl = this.addUrlParam(this.config.url, 'coverage', 'true');
 	}
-
-	var self = this;
+	
 	this.startSauceConnect(function(err) {
-		if (err) return self.cb(err);
-		self.nbTests = self.config.browsers.length;
-		self.startBrowser(0);
-	});
+		if (err) return this.cb(err);
+		this.nbTests = this.config.browsers.length;
+		this.startBrowser(0);
+	}.bind(this));
 };
 
 /**
@@ -147,16 +146,26 @@ Remote.prototype.startBrowser = function(index) {
 		console.log('%s: > ' + colorize('yellow', '%s') + ': %s', name, meth, path);
 	});
 	
-	browser.init(desired, function(err, sessionID) {
-		var testDone = this.testDone.bind(this, browser, name, sessionID);
+	browser.init(desired, function(err) {
+		var testDone = this.testDone.bind(this, browser, name);
 		if (err) {
 			console.log('%s: ' + colorize('red', '%s') + ' (%s)', name, err.message);
 			console.log(' > Requested browser:', desired);
 			console.log(' > Error:', err);
 			testDone(null);
 		} else {
-			var onTest = this.config.onTest ? this.config.onTest.bind(null) : this.onTest.bind(this);
-			onTest(browser, this.coverage, testDone);
+			var sessionData = {};
+			this.sessions[browser.sessionID] = sessionData;
+			sessionData.browser = browser;
+			sessionData.browserName = name;
+			sessionData.sessionId = browser.sessionID;
+			
+			var onTest = this.config.onTest ? this.config.onTest.bind(sessionData) : this.onTest.bind(sessionData);
+			onTest({
+				browser: browser,
+				url: this.config.url,
+				coverageUrl: this.coverageUrl
+			}, testDone);
 		}
 		
 		if (this.config.browsers[index + 1]) {
@@ -171,29 +180,41 @@ Remote.prototype.startBrowser = function(index) {
  * @method onTest
  * @private
  */
-Remote.prototype.onTest = function(browser, coverage, cb) {
-	var cover = function(url, cb) {
-		browser.get(url, function() {
-			browser.waitForCondition('!!window.mochaResults', 30000, 1000, function() {
-				/* jshint evil: true */
-				browser['eval']('window.mochaResults', function(err, res) {
-					cb(res);
-				});
-			});
-		});
-	};
+Remote.prototype.onTest = function(conf, cb) {
+	this.cb = cb;
 	
-	var coverageUrl = this.coverageUrl;
-	cover(this.config.url, function(status) {
-		if (coverage) {
-			cover(coverageUrl, function(statusCoverage) {
-				cb(status, statusCoverage);
+	var cover = function(url, cb) {
+		this.onBrowserResult = function(data) {
+			cb(JSON.parse(data.testResult));
+		};
+		conf.browser.get(url);
+	}.bind(this);
+	
+	cover(Remote.prototype.addUrlParam(conf.url, 'sessionId', this.sessionId), function(status) {
+		if (conf.coverageUrl) {
+			cover(Remote.prototype.addUrlParam(conf.coverageUrl, 'sessionId', this.sessionId), function(statusCov) {
+				cb(status, statusCov);
 			});
 		} else {
 			cb(status);
 		}
-	});
-		
+	}.bind(this));
+	
+};
+
+/**
+ * @method browserData
+ * @private
+ */
+Remote.prototype.browserData = function(data) {
+	var sessionId = JSON.parse(data.sessionId);
+	var session = this.sessions[sessionId];
+	
+	if (session && session.onBrowserResult) {
+		session.onBrowserResult(data);
+	} else {
+		console.error('Cannot find session <' + sessionId + '> while posting browser data.');
+	}
 };
 
 /**
@@ -211,10 +232,12 @@ Remote.prototype.getBrowserName = function(browser) {
  * @method testDone
  * @private
  */
-Remote.prototype.testDone = function(browser, name, id, status, statusCoverage) {
-	browser.quit();
-	this.status[name] = this.getReport(status, statusCoverage);
-	this.report(id, this.status[name], name, this.finish.bind(this));
+Remote.prototype.testDone = function(browser, name, status, statusCoverage) {
+	var sessionId = browser.sessionID;
+	browser.quit(function() {
+		this.status[name] = this.getReport(status, statusCoverage);
+		this.report(sessionId, this.status[name], name, this.finish.bind(this));
+	}.bind(this));
 };
 
 /**
@@ -235,7 +258,7 @@ Remote.prototype.finish = function() {
  * @method report
  * @private
  */
-Remote.prototype.report = function(jobId, status, name, done) {
+Remote.prototype.report = function(sessionId, status, name, done) {
 	var success = !!(status.full && status.full.passed);
 	
 	if (!this.config.webdriverURL) {
@@ -246,22 +269,23 @@ Remote.prototype.report = function(jobId, status, name, done) {
 			password: this.config.key
 		});
 		
-		myAccount.updateJob(jobId, {
+		myAccount.updateJob(sessionId, {
 			passed: success,
 			'custom-data': {
 				mocha: status.simple // Cannot send full report: http://support.saucelabs.com/entries/23287242
 			}
 		}, function(err) {
 			if (err) {
-				console.log('%s: > job %s: ' + colorize('red', 'unable to set status:'), name, jobId, err);
+				console.log('%s: > job %s: ' + colorize('red', 'unable to set status:'), name, sessionId, err);
 			} else {
-				console.log('%s: > job %s marked as %s', name, jobId,
+				console.log('%s: > job %s marked as %s', name, sessionId,
 						success ? colorize('green', 'passed') : colorize('red', 'failed'));
 			}
 			done();
 		});
 	} else {
-		console.log('%s: > job %s: %s', name, jobId, success ? colorize('green', 'passed') : colorize('red', 'failed'));
+		console.log('%s: > job %s: %s', name, sessionId,
+				success ? colorize('green', 'passed') : colorize('red', 'failed'));
 		done();
 	}
 };
@@ -384,6 +408,13 @@ Remote.prototype.finalizeReport = function(report) {
 	}
 	
 	return newReport;
+};
+
+Remote.prototype.addUrlParam = function(url, param, key) {
+	var urlModule = require('url');
+	var u = urlModule.parse(url);
+	u.search = (u.search ? u.search + '&' : '?') + encodeURIComponent(param) + '=' + encodeURIComponent(key);
+	return urlModule.format(u);
 };
 
 exports = module.exports = Remote;

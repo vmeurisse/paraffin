@@ -158,7 +158,11 @@ Tests.prototype.prepareCoverage = function(cb) {
 Tests.prototype.runRemote = function(cb) {
 	this.displayAction('Running remote tests...', true);
 	var Remote = require('./Remote');
-	new Remote(this.config.remote).run(!!this.coverage, function(err, status) {
+	var remote = new Remote(this.config.remote);
+	if (this.server) {
+		this.server.addPostHandler('/browserData', remote.browserData.bind(remote));
+	}
+	remote.run(!!this.coverage, function(err, status) {
 		for (var key in status) {
 			this.testStatus[key] = status[key];
 		}

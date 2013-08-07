@@ -2,7 +2,7 @@
 /* globals define:true */
 if (typeof define !== 'function') {var define = require('amdefine')(module)}
 
-define(function() {
+define(['./browserUtils'], function(browserUtils) {
 	/* jshint evil: true */
 	var global = new Function('return this')();
 	var Date = global.Date; // Save Date reference to avoid Sinon interfering
@@ -69,6 +69,15 @@ define(function() {
 		runner.on('end', function() {
 			global.mochaResults = result.suites[0];
 			delete global.mochaResults.description;
+			
+			var sessionId = browserUtils.getQueryParam('sessionId');
+			if (sessionId) {
+				// Ugly hack. Wait for coverage data to be posted first.
+				// Otherwise, the browser might be closed too fast 
+				setTimeout(function() {
+					browserUtils.postData('/browserData', {sessionId: sessionId, testResult: result.suites[0]});
+				}, 1000);
+			}
 		});
 	};
 });

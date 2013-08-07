@@ -50,5 +50,10 @@ define(function() {
 		div.getElementsByTagName('form')[0].submit();
 	};
 	
+	browserUtils.getQueryParam = function(key) {
+		var match = location.search.match('[?&]' + key + '=([^#$&]*)');
+		return match && match[1];
+	};
+	
 	return browserUtils;
 });
