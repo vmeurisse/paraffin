@@ -19,8 +19,8 @@ var NodeTests = function(config) {
  * @method run
  * 
  * @param [coverage] {Coverage} If provided, will use {{#crossLink "coverageReporter"}}{{/crossLink}} instead of the
- *                              requested reporter. Will also set environement variable `SMPL_COVERAGE` to `1` to allow
- *                              your scripts to require the correct source version.
+ *                              requested reporter. Will also set environement variable `PARAFFIN_COVERAGE` to `1` to
+ *                              allow your scripts to require the correct source version.
  * @param cb {function} callback
  */
 NodeTests.prototype.run = function(coverage, cb) {
@@ -28,7 +28,7 @@ NodeTests.prototype.run = function(coverage, cb) {
 	var reporter;
 	
 	if (coverage) {
-		process.env.SMPL_COVERAGE = '1';
+		process.env.PARAFFIN_COVERAGE = '1';
 		reporter = require('./mocha/coverageReporter');
 		reporter.setCoverage(coverage);
 	}
@@ -45,7 +45,7 @@ NodeTests.prototype.run = function(coverage, cb) {
 	
 	// Now, you can run the tests.
 	mocha.run(function(failures) {
-		process.env.SMPL_COVERAGE = '';
+		process.env.PARAFFIN_COVERAGE = '';
 		cb(failures);
 	});
 };

@@ -31,7 +31,7 @@ define(['module', './browserUtils', './multiReporter', './testStatusReporter', '
 	
 	if (browserUtils.getQueryParam('coverage') === 'true') {
 		window.process.env = {
-			SMPL_COVERAGE: '1'
+			PARAFFIN_COVERAGE: '1'
 		};
 	}
 	
