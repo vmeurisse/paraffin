@@ -141,7 +141,7 @@ Tests.prototype.runTests = function(type, cb) {
 	new NodeTests(this.config.node).run(coverage, function(err) {
 		this.displayStatus(err);
 		cb.apply(null, arguments);
-	});
+	}.bind(this));
 };
 
 Tests.prototype.prepareCoverage = function(cb) {
