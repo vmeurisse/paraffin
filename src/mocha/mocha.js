@@ -30,6 +30,7 @@ define(['module', './browserUtils', './multiReporter', './testStatusReporter', '
 	document.getElementsByTagName('head')[0].appendChild(link);
 	
 	if (browserUtils.getQueryParam('coverage') === 'true') {
+		window.process = window.process || {};
 		window.process.env = {
 			PARAFFIN_COVERAGE: '1'
 		};
