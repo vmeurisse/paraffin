@@ -77,7 +77,7 @@ Tests.prototype.run = function(cb) {
 };
 
 Tests.prototype.stop = function(cb) {
-	if (this.actions.coverageReport) {
+	if (this.actions.coverageReport && this.coverage) {
 		this.coverage.report();
 	}
 	if (this.server) {
