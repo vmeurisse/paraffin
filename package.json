@@ -10,8 +10,8 @@
 	},
 	"dependencies": {
 		"shelljs": "0.1.x",
-		"node-static": "0.6.x",
-		"wd": "0.0.x",
+		"node-static": "0.7.x",
+		"wd": "0.1.x",
 		"sauce-connect-launcher": "~0.1.11",
 		"saucelabs": "~0.0.7",
 		"mocha": "~1.8.2",
@@ -21,7 +21,7 @@
 	},
 	"devDependencies": {
 		"jake": "0.5.x",
-		"smpl-build-test": "0.6.x"
+		"smpl-build-test": "0.7.x"
 	},
 	"repository": {
 		"type": "git",
