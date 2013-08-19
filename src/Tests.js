@@ -12,6 +12,7 @@ var colorize = require('./color').auto;
  * @param [config.remote] {Object} config for {{#crossLink "Remote"}}{{/crossLink}}
  * @param [config.node] {Object} config for {{#crossLink "NodeTests"}}{{/crossLink}}
  * @param [config.coverage] {Object} config for {{#crossLink "Coverage"}}{{/crossLink}}
+ * @param [config.sauceConnect] {Object} config for {{#crossLink "SauceConnect"}}{{/crossLink}}
  * @param [config.manualStop] {Boolean} If true, server is not stopped automatically and coverage report is delayed.
  *                            You need to manually call the stop method to end the tests.
  * @param [config.reporter] {Array} First element is a reporter.
@@ -24,14 +25,15 @@ var Tests = function(config) {
 	this.config = config;
 	
 	var actions = this.actions = {};
-	actions.runServer = !!this.config.server;
 	actions.runNodeTests = !!(this.config.node && (!this.config.coverage || !this.config.coverage.coverageOnly));
-	actions.runNodeCoverage = !!(this.config.coverage && this.config.node);
 	actions.prepareCoverage = !!this.config.coverage;
+	actions.runNodeCoverage = !!(this.config.coverage && this.config.node);
+	actions.runServer = !!this.config.server;
+	actions.sauceConnect = !!this.config.sauceConnect;
 	actions.runRemote = !!this.config.remote;
 	actions.coverageReport = !!(this.config.coverage && this.config.server);
 	
-	var needStop = !!this.config.server;
+	var needStop = actions.runServer || actions.sauceConnect;
 	actions.autoStop = needStop && !this.config.manualStop;
 	actions.manualStop = needStop && !!this.config.manualStop;
 };
@@ -43,10 +45,11 @@ Tests.prototype.run = function(cb) {
 	
 	var actions = [];
 	
-	if (this.actions.runServer) actions.push(this.startServer.bind(this));
 	if (this.actions.runNodeTests) actions.push(this.runTests.bind(this, 'standard'));
 	if (this.actions.prepareCoverage) actions.push(this.prepareCoverage.bind(this));
 	if (this.actions.runNodeCoverage) actions.push(this.runTests.bind(this, 'coverage'));
+	if (this.actions.runServer) actions.push(this.startServer.bind(this));
+	if (this.actions.sauceConnect) actions.push(this.startSauceConnect.bind(this));
 	if (this.actions.runRemote) actions.push(this.runRemote.bind(this));
 	
 	if (this.actions.manualStop) {
@@ -59,11 +62,11 @@ Tests.prototype.run = function(cb) {
 			}
 		}
 		if (this.actions.autoStop) {
-			this.stop(function() {
+			this.stop(function(stopErr) {
 				if (cb) {
 					// Small delay so that all messages get time to be written to console before returning to caller 
 					setTimeout(function() {
-						cb(err);
+						cb(err || stopErr);
 					}, 100);
 				}
 			}.bind(this));
@@ -77,18 +80,19 @@ Tests.prototype.run = function(cb) {
 };
 
 Tests.prototype.stop = function(cb) {
-	if (this.actions.coverageReport && this.coverage) {
-		this.coverage.report();
-	}
-	if (this.server) {
-		this.stopServer(cb);
-	}
+	var actions = [];
+	if (this.sauceConnect) actions.push(this.stopSauceConnect.bind(this));
+	if (this.server) actions.push(this.stopServer.bind(this));
+	if (this.actions.coverageReport && this.coverage) actions.push(this.coverage.report.bind(this.coverage));
 	
-	if (this.config.reporter) {
-		var Reporter = this.config.reporter[0];
-		if (Reporter === 'Xunit') Reporter = require('./Xunit');
-		new Reporter(this.config.reporter[1], this.testStatus);
-	}
+	require('async').series(actions, function(err) {
+		if (this.config.reporter) {
+			var Reporter = this.config.reporter[0];
+			if (Reporter === 'Xunit') Reporter = require('./Xunit');
+			new Reporter(this.config.reporter[1], this.testStatus);
+		}
+		cb(err);
+	}.bind(this));
 };
 
 /**
@@ -129,6 +133,37 @@ Tests.prototype.stopServer = function(cb) {
 	this.displayAction('Stopping server...');
 	this.server.stop(function() {
 		delete this.server;
+		this.displayStatus();
+		if (cb) cb();
+	}.bind(this));
+};
+
+
+/**
+ * Start Sauce Connect
+ * 
+ * @method startSauceConnect
+ * @private
+ */
+Tests.prototype.startSauceConnect = function(cb) {
+	this.displayAction('Starting Sauce Connect...', true);
+	var SauceConnect = require('./SauceConnect');
+	this.sauceConnect = new SauceConnect(this.config.sauceConnect).start(function(err) {
+		this.displayStatus();
+		if (cb) cb(err);
+	}.bind(this));
+};
+
+/**
+ * Stop Sauce Connect
+ * 
+ * @method stopSauceConnect
+ * @private
+ */
+Tests.prototype.stopSauceConnect = function(cb) {
+	this.displayAction('Stopping Sauce Connect...');
+	this.sauceConnect.stop(function() {
+		delete this.sauceConnect;
 		this.displayStatus();
 		if (cb) cb();
 	}.bind(this));

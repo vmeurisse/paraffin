@@ -2,7 +2,7 @@
 
 var colorize = require('./color').auto;
 /**
- * Class used to run tests on SauceLabs
+ * Run tests on selenium using webdriver protocol
  * 
  * @class Remote
  * @constructor
@@ -10,9 +10,8 @@ var colorize = require('./color').auto;
  * @param config {Object}
  * @param [config.webdriverURL='ondemand.saucelabs.com'] {String}
  * @param [config.webdriverPort=80] {String}
- * @param [config.user] {String} username for sauceLabs
- * @param [config.key] {String} key on sauceLabs
- * @param [config.sauceConnect] {Boolean} use Sauce Connect proxy
+ * @param [config.user] {String} Selenium username
+ * @param [config.key] {String} Selenium password
  * @param [config.url] {String} Url of the tests. Used by the default `onTest` method. The parameter `coverage=true`
  *                     will be automatically added when testing coverage.
  * @param [config.onTest] {Function} You can overide the default test method. It get the following parameters:
@@ -44,51 +43,6 @@ var Remote = function(config) {
 };
 
 /**
- * Start Sauce Connect
- * 
- * @method startSauceConnect
- * @private
- */
-Remote.prototype.startSauceConnect = function(cb) {
-	/* jshint camelcase: false */
-	if (!this.config.sauceConnect) {
-		cb();
-		return;
-	}
-	var options = {
-		username: this.config.user,
-		accessKey: this.config.key,
-		verbose: false,
-		logger: console.log
-	};
-	var sauceConnectLauncher = require('sauce-connect-launcher');
-	var self = this;
-	sauceConnectLauncher(options, function (err, sauceConnectProcess) {
-		if (err) {
-			if (!(err + '').match(/Exit code 143/)) {
-				cb('Error launching sauce connect: ' + err);
-			}
-			return;
-		}
-		self.sauceConnect = sauceConnectProcess;
-		cb();
-	});
-};
-
-/**
- * Stop Sauce Connect
- * 
- * @method stopSauceConnect
- * @private
- */
-Remote.prototype.stopSauceConnect = function() {
-	if (this.sauceConnect) {
-		this.sauceConnect.close();
-		delete this.sauceConnect;
-	}
-};
-
-/**
  * Run the tests
  * 
  * @method run
@@ -103,11 +57,8 @@ Remote.prototype.run = function(coverage, cb) {
 		this.coverageUrl = this.addUrlParam(this.config.url, 'coverage', 'true');
 	}
 	
-	this.startSauceConnect(function(err) {
-		if (err) return this.cb(err);
-		this.nbTests = this.config.browsers.length;
-		this.startBrowser(0);
-	}.bind(this));
+	this.nbTests = this.config.browsers.length;
+	this.startBrowser(0);
 };
 
 /**
@@ -246,11 +197,7 @@ Remote.prototype.testDone = function(browser, name, status, statusCoverage) {
  */
 Remote.prototype.finish = function() {
 	if (0 === --this.nbTests) {
-		this.stopSauceConnect();
-		var self = this;
-		setTimeout(function() {
-			self.displayResults();
-		}, 1000);
+		this.displayResults();
 	}
 };
 

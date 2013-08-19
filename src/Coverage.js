@@ -1,4 +1,3 @@
-/* globals fail: false */ // Globals exposed by jake
 'use strict';
 
 var fs = require('fs');
@@ -133,7 +132,7 @@ Coverage.prototype.writeFile = function(data, filename) {
  *
  * @method report
  */
-Coverage.prototype.report = function() {
+Coverage.prototype.report = function(cb) {
 	var Report = istanbul.Report;
 	var Collector = istanbul.Collector;
 	
@@ -177,11 +176,9 @@ Coverage.prototype.report = function() {
 				}
 			}
 		}, this);
-		if (errors.length) {
-			console.error(errors.join('\n'));
-			fail();
-		}
+		return cb(errors.join('\n'));
 	}
+	cb();
 };
 
 /**

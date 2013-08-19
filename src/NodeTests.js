@@ -46,7 +46,11 @@ NodeTests.prototype.run = function(coverage, cb) {
 	// Now, you can run the tests.
 	mocha.run(function(failures) {
 		process.env.PARAFFIN_COVERAGE = '';
-		cb(failures);
+		if (coverage) {
+			coverage.report(function(err) {
+				cb(failures || err);
+			});
+		} else cb(failures);
 	});
 };
 
