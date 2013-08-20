@@ -107,6 +107,7 @@ Tests.prototype.startServer = function(cb) {
 		var Server = require('./Server');
 		
 		this.server = new Server(this.config.server);
+		if (this.coverage) this.server.setCoverage(this.coverage);
 		this.server.start(function(err, address) {
 			if (this.config.remote && this.config.remote.url) {
 				var url = require('url');
@@ -184,7 +185,6 @@ Tests.prototype.prepareCoverage = function(cb) {
 	var Coverage = require('./Coverage');
 	this.coverage = new Coverage(this.config.coverage);
 	this.coverage.prepare();
-	if (this.server) this.server.setCoverage(this.coverage);
 	process.stdout.write('\n');
 	this.displayStatus();
 	cb();
