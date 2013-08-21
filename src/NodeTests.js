@@ -50,7 +50,9 @@ NodeTests.prototype.run = function(coverage, cb) {
 			coverage.report(function(err) {
 				cb(failures || err);
 			});
-		} else cb(failures);
+		} else {
+			cb(failures);
+		}
 	});
 };
 

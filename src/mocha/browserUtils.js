@@ -1,20 +1,6 @@
 /* jshint browser: true */
-/* globals define */
+/* globals define, ActiveXObject*/
 define(function() {
-	var i = 10;
-	while (i--) {
-		window['paraffinPost' + i] = ''; //Prevent mocha to detect the iframes as new globals
-	}
-
-	var escapeHTML = function(string) {
-		return String(string).replace(/&/g, '&amp;')
-		                     .replace(/"/g, '&quot;')
-		                     .replace(/'/g, '&#39;')
-		                     .replace(/</g, '&lt;')
-		                     .replace(/>/g, '&gt;');
-	};
-	
-	//Browser utils for crappy browsers
 	var browserUtils = {};
 	
 	browserUtils.stringify = window.JSON && JSON.stringify || function (obj) {
@@ -31,23 +17,36 @@ define(function() {
 		}
 	};
 	
-	var iframeIndex = 0;
-	browserUtils.postData = function(url, data) {
-		var div = document.createElement('div');
-		var iframeName = 'paraffinPost' + (iframeIndex++);
-		var innerHTML = '<iframe name="' + iframeName + '" style="display:none"></iframe>' +
-		                '<form method="post" target="' + iframeName + '" action="' + escapeHTML(url) + '">';
-		
-		for (var key in data) {
-			innerHTML += '<textarea style="display:none" name="' + escapeHTML(key) + '">' +
-			                  escapeHTML(browserUtils.stringify(data[key])) +
-			             '</textarea>';
+	var XMLHttpRequest = window.XMLHttpRequest || function() {
+		try {
+			return new ActiveXObject('MSXML2.XMLHTTP.6.0');
+		} catch (e) {
 		}
-		innerHTML += '</form>';
-		
-		div.innerHTML = innerHTML;
-		document.body.appendChild(div);
-		div.getElementsByTagName('form')[0].submit();
+		try {
+			return new ActiveXObject('MSXML2.XMLHTTP.3.0');
+		} catch (e) {
+		}
+		return null;
+	};
+	
+	var ajaxQueue = [];
+	var ajaxRunning = false;
+	browserUtils.postData = function(url, data) {
+		if (ajaxRunning) return ajaxQueue.push(arguments);
+		ajaxRunning = true;
+		var xhr = new XMLHttpRequest();
+                xhr.open('POST', url, true);
+		xhr.onreadystatechange = function() {
+			if (xhr.readyState === 4) {
+				ajaxRunning = false;
+				if (ajaxQueue.length) browserUtils.postData.apply(browserUtils, ajaxQueue.shift());
+			}
+		};
+		var query = [];
+		for (var key in data) {
+			query.push(encodeURIComponent(key) + '=' + encodeURIComponent(browserUtils.stringify(data[key])));
+		}
+		xhr.send(query.join('&'));
 	};
 	
 	browserUtils.getQueryParam = function(key) {
@@ -57,3 +56,4 @@ define(function() {
 	
 	return browserUtils;
 });
+
