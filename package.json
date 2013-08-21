@@ -28,9 +28,9 @@
 		"url": "https://github.com/vmeurisse/paraffin.git"
 	},
 	"scripts": {
-		"test": "jake test",
-		"lint": "jake lint",
-		"doc": "jake doc"
+		"test": "jake test --trace",
+		"lint": "jake lint --trace",
+		"doc": "jake doc --trace"
 	},
 	"main": "src/paraffin.js",
 	"engine": "node >= 0.8.0"
