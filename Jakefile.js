@@ -1,19 +1,21 @@
-/* globals jake: false, task: false, fail: false, complete: false */ // Globals exposed by jake
+/* globals task: false, fail: false, complete: false */ // Globals exposed by jake
 'use strict';
 
+var glob = require('glob');
 var smplBuild = require('smpl-build-test');
 
 task('test', ['lint', 'doc']);
 
 task('lint', [], {async: true}, function() {
-	var files = new jake.FileList();
-	files.include(__dirname + '/*.js');
-	files.include(__dirname + '/*.json');
-	files.include(__dirname + '/src/**/*.json');
-	files.include(__dirname + '/src/**/*.js');
+	var files = glob.sync('{' +
+		__dirname + '/*.js,' +
+		__dirname + '/*.json,' +
+		__dirname + '/src/**/*.js,' +
+		__dirname + '/src/**/*.json' +
+	'}');
 	
 	var options = {
-		files: files.toArray(),
+		files: files,
 		js: {
 			options: {
 				node: true
@@ -47,3 +49,4 @@ task('doc', [], {async: true}, function() {
 		else complete();
 	});
 });
+
