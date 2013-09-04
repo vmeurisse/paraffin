@@ -27,6 +27,7 @@ Server.prototype.start = function(cb) {
 	this.staticServer = new nodeStatic.Server(this.config.path, {headers: HTTP_HEADERS});
 	this.server = require('http').createServer(this.handleRequest.bind(this));
 	this.server.listen(this.config.port, function() {
+		this.addPingHandler();
 		cb(null, this.server.address());
 	}.bind(this));
 };
@@ -49,10 +50,27 @@ Server.prototype.setCoverage = function(coverage) {
 			response.writeHead(200, HTTP_HEADERS);
 			response.end('ok\n');
 		} else {
+			console.log('Missing coverage data for ' + (request.headers['user-agent'] || 'unknown browser'));
 			response.writeHead(400, HTTP_HEADERS);
 			response.end('Missing coverage data.\n');
 		}
 	}.bind(this));
+};
+
+Server.prototype.addPingHandler = function() {
+	this.addHandler('/ping', function(request, response) {
+		response.setHeader('Content-Type', request.url.query.jsonP ? 'application/javascript' : 'application/json');
+		response.writeHead(200, HTTP_HEADERS);
+		var data = JSON.stringify({
+			url: request.url,
+			post: request.postData,
+			headers: request.headers,
+			method: request.method
+		});
+		var prefix = request.url.query.jsonP ? request.url.query.jsonP + '(' : '';
+		var postfix = request.url.query.jsonP ? ');\n' : '\n';
+		response.end(prefix + data + postfix);
+	});
 };
 
 Server.prototype.addPostHandler = function(url, cb) {
@@ -76,7 +94,7 @@ Server.prototype.handleRequest = function(request, response) {
 	}
 	request.on('end', function () {
 		var postData = (request.method === 'POST') ? qs.parse(body) : {};
-		var parsedUrl = url.parse(request.url);
+		var parsedUrl = url.parse(request.url, true);
 		request.postData = postData;
 		
 		for (var i = 0; i < this.requestHandlers.length; i++) {
