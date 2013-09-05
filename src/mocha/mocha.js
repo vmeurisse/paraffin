@@ -16,11 +16,11 @@ if (window.ActiveXObject || !window.postMessage) {
 }
 
 define(['module', './browserUtils', './multiReporter', './testStatusReporter', './coveragePosterReporter',
-		'../../node_modules/mocha/mocha'],
-		function(module, browserUtils, multiReporter, TestStatusReporter, CoveragePosterReporter) {
+		'./globalLeaks', '../../node_modules/mocha/mocha'],
+		function(module, browserUtils, multiReporter, TestStatusReporter, CoveragePosterReporter, GlobalLeaks) {
 	
 	mocha.setup('tdd');
-	mocha.reporter(multiReporter.get(Mocha.reporters.HTML, CoveragePosterReporter, TestStatusReporter));
+	mocha.reporter(multiReporter.get(Mocha.reporters.HTML, CoveragePosterReporter, TestStatusReporter, GlobalLeaks));
 	
 	// Load the CSS
 	var link = document.createElement('link');
