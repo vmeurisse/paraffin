@@ -59,7 +59,9 @@ Server.prototype.setCoverage = function(coverage) {
 
 Server.prototype.addPingHandler = function() {
 	this.addHandler('/ping', function(request, response) {
-		response.setHeader('Content-Type', request.url.query.jsonP ? 'application/javascript' : 'application/json');
+		response.setHeader('Content-Type', request.url.query.format === 'html' ? 'text/html' :
+		                                   request.url.query.jsonP ? 'application/javascript' :
+		                                   'application/json');
 		response.writeHead(200, HTTP_HEADERS);
 		var data = JSON.stringify({
 			url: request.url,
@@ -67,8 +69,20 @@ Server.prototype.addPingHandler = function() {
 			headers: request.headers,
 			method: request.method
 		});
-		var prefix = request.url.query.jsonP ? request.url.query.jsonP + '(' : '';
-		var postfix = request.url.query.jsonP ? ');\n' : '\n';
+		var prefix = '';
+		var postfix = '';
+		if (request.url.query.format === 'html') {
+			prefix = '<!DOCTYPE html><head><title>pong</title></head><body>';
+			data = data.replace(/&/g, '&amp;')
+			           .replace(/"/g, '&quot;')
+			           .replace(/'/g, '&#39;')
+			           .replace(/</g, '&lt;')
+			           .replace(/>/g, '&gt;');
+			postfix = '</body></html>';
+		} else if (request.url.query.jsonP) {
+			prefix = request.url.query.jsonP + '(';
+			postfix = ');\n';
+		}
 		response.end(prefix + data + postfix);
 	});
 };
