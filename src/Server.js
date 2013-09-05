@@ -43,7 +43,7 @@ Server.prototype.stop = function(cb) {
 
 Server.prototype.setCoverage = function(coverage) {
 	this.coverage = coverage;
-	this.addHandler('/postResults', function(request, response) {
+	this.addHandler('/postCoverage', function(request, response) {
 		if (request.postData.coverage) {
 			console.log('Adding coverage data for ' + (request.headers['user-agent'] || 'unknown browser'));
 			this.coverage.writeFile(request.postData.coverage);
