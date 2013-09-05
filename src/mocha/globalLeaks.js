@@ -4,11 +4,11 @@ if (typeof define !== 'function') {var define = require('amdefine')(module)}
 
 define(function() {
 	
-	var filter = function(arr, fn) {
-		if (arr.filter) return arr.filter(fn);
+	var filter = function(arr, fn, scope) {
+		if (arr.filter) return arr.filter(fn, scope);
 		var res = [];
 		for (var i = 0; i < arr.length; i++) {
-			if (fn(arr[i], i, arr)) {
+			if (fn.call(scope, arr[i], i, arr)) {
 				res.push(arr[i]);
 			}
 		}
@@ -45,6 +45,7 @@ define(function() {
 		runner.on('hook end', this.checkGlobals.bind(this));
 		
 		this._globals = [];
+		this._ignoredGlobals = [];
 		this.testSkiped = true;
 		
 		this.ignoreLeaks = !!mocha.options.ignoreLeaks;
@@ -72,15 +73,14 @@ define(function() {
 	
 	GlobalChecker.prototype.checkNewGlobals = function() {
 		var ok = this._globals;
+		var ignored = this._ignoredGlobals;
+		
 		var globals = this.getGlobals();
-		var isNode = global.process && global.process.kill;
 		var leaks;
 		
-		// check length - 2 ('errno' and 'location' globals)
-		if (isNode && 1 === ok.length - globals.length) return;
-		else if (2 === ok.length - globals.length) return;
+		if (ok.length + ignored.length === globals.length) return [];
 
-		leaks = this.filterLeaks(ok, globals);
+		leaks = this.filterLeaks(globals);
 		this._globals = this._globals.concat(leaks);
 		return leaks;
 	};
@@ -109,18 +109,19 @@ define(function() {
 		return !this.ignoreLeaks;
 	};
 	
-	GlobalChecker.prototype.filterLeaks = function (ok, globals) {
-		return filter(globals, function(key) {
-			// Firefox and Chrome exposes iframes as index inside the window object
-			if (/^d+/.test(key)) return false;
-			var matched = filter(ok, function(ok) {
-				if (ok.indexOf('*') !== -1) return 0 === key.indexOf(ok.split('*')[0]);
-				// Opera and IE expose global variables for HTML element IDs (issue #243)
-				if (/^mocha-/.test(key)) return true;
-				return key === ok;
-			});
-			return matched.length === 0 && (!global.navigator || 'onerror' !== key);
-		});
+	GlobalChecker.prototype.filterLeaks = function (globals) {
+		var ignored = [];
+		globals = filter(globals, function(key) {
+			var isIgnored = /^d+/.test(key) || // Firefox and Chrome exposes iframes as index inside the window object
+			                /^mocha-/.test(key); // Opera and IE expose global variables for HTML IDs (issue mocha#243)
+			if (isIgnored) {
+				ignored.push(key);
+				return false;
+			}
+			return indexOf(this._globals, key) === -1;
+		}, this);
+		this._ignoredGlobals = ignored;
+		return globals;
 	};
 	
 	return GlobalChecker;
