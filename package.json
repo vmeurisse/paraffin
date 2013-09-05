@@ -9,7 +9,7 @@
 		"url": "https://github.com/vmeurisse/paraffin/issues"
 	},
 	"dependencies": {
-		"shelljs": "0.1.x",
+		"shelljs": "0.2.x",
 		"node-static": "0.7.x",
 		"wd": "0.1.x",
 		"sauce-connect-launcher": "~0.1.11",
@@ -20,7 +20,7 @@
 		"amdefine": "~0.0.5"
 	},
 	"devDependencies": {
-		"jake": "0.5.x",
+		"jake": "0.6.x",
 		"glob": "~3.2.6",
 		"smpl-build-test": "0.7.x"
 	},
