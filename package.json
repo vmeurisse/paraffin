@@ -14,7 +14,7 @@
 		"wd": "0.1.x",
 		"sauce-connect-launcher": "~0.1.11",
 		"saucelabs": "~0.0.7",
-		"mocha": "~1.8.2",
+		"mocha": "~1.13.0",
 		"istanbul": "0.1.x",
 		"async": "~0.2.8",
 		"amdefine": "~0.0.5"
