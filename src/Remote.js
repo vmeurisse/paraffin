@@ -31,6 +31,20 @@ var colorize = require('./color').auto;
  */
 var Remote = function(config) {
 	this.config = config;
+	
+	if (this.config.url) {
+		if (typeof this.config.url === 'string') {
+			this.config.url = [this.config.url];
+		}
+		for (var x = 0; x < this.config.url.length; x++) {
+			if (typeof this.config.url[x] === 'string') {
+				this.config.url[x] = {
+					url: this.config.url[x]
+				};
+			}
+		}
+	}
+	
 	this.id = process.env.TRAVIS_BUILD_NUMBER;
 	this.tags = [];
 	if (this.id) {
@@ -46,16 +60,11 @@ var Remote = function(config) {
  * Run the tests
  * 
  * @method run
- * @param coverage {boolean} If true, should also run test with coverage
  * @param cb {Function} Callback when tests are finished running.
  * @param cb.failures {Number} Number of browsers that failed
  */
-Remote.prototype.run = function(coverage, cb) {
+Remote.prototype.run = function(cb) {
 	this.cb = cb;
-	this.coverage = coverage;
-	if (coverage && this.config.url) {
-		this.coverageUrl = this.addUrlParam(this.config.url, 'coverage', 'true');
-	}
 	
 	this.nbTests = this.config.browsers.length;
 	this.startBrowser(0);
@@ -93,7 +102,8 @@ Remote.prototype.startBrowser = function(index) {
 		console.log('%s: ' + colorize('cyan', '%s'), name, info.trim());
 	});
 	
-	browser.on('command', function(meth, path) {
+	browser.on('command', function(meth, path, data) {
+		if (path === '/session/:sessionID/url') path += ' ' + data.url;
 		console.log('%s: > ' + colorize('yellow', '%s') + ': %s', name, meth, path);
 	});
 	
@@ -110,12 +120,12 @@ Remote.prototype.startBrowser = function(index) {
 			sessionData.browser = browser;
 			sessionData.browserName = name;
 			sessionData.sessionId = browser.sessionID;
+			sessionData.url = this.config.url;
 			
 			var onTest = this.config.onTest ? this.config.onTest.bind(sessionData) : this.onTest.bind(sessionData);
 			onTest({
 				browser: browser,
-				url: this.config.url,
-				coverageUrl: this.coverageUrl
+				url: this.config.url
 			}, testDone);
 		}
 		
@@ -132,25 +142,18 @@ Remote.prototype.startBrowser = function(index) {
  * @private
  */
 Remote.prototype.onTest = function(conf, cb) {
-	this.cb = cb;
+	var utils = require('./utils');
 	
 	var cover = function(url, cb) {
 		this.onBrowserResult = function(data) {
-			cb(JSON.parse(data.testResult));
+			cb(null, JSON.parse(data.testResult));
 		};
-		conf.browser.get(url);
+		conf.browser.get(utils.addUrlParam(url.url, 'sessionId', this.sessionId));
 	}.bind(this);
 	
-	cover(Remote.prototype.addUrlParam(conf.url, 'sessionId', this.sessionId), function(status) {
-		if (conf.coverageUrl) {
-			cover(Remote.prototype.addUrlParam(conf.coverageUrl, 'sessionId', this.sessionId), function(statusCov) {
-				cb(status, statusCov);
-			});
-		} else {
-			cb(status);
-		}
-	}.bind(this));
-	
+	require('async').mapSeries(conf.url, cover, function(err, res) {
+		cb.apply(null, res);
+	});
 };
 
 /**
@@ -183,10 +186,12 @@ Remote.prototype.getBrowserName = function(browser) {
  * @method testDone
  * @private
  */
-Remote.prototype.testDone = function(browser, name, status, statusCoverage) {
+Remote.prototype.testDone = function(browser, name /*, status...*/) {
 	var sessionId = browser.sessionID;
+	var sessionData = this.sessions[sessionId] || {};
+	var report = Array.prototype.slice.call(arguments, 2);
 	browser.quit(function() {
-		this.status[name] = this.getReport(status, statusCoverage);
+		this.status[name] = this.getReport(sessionData.url, report);
 		this.report(sessionId, this.status[name], name, this.finish.bind(this));
 	}.bind(this));
 };
@@ -237,15 +242,14 @@ Remote.prototype.report = function(sessionId, status, name, done) {
 	}
 };
 
-Remote.prototype.getReport = function(fullReport, fullReportCoverage) {
-	if (!fullReport) return {};
+Remote.prototype.getReport = function(urls, reports) {
+	if (!reports || !reports[0] || urls.length !== reports.length) return {};
 	var prefix = '';
 	
 	var simple = {
 		failed: 0,
 		passed: 0,
-		total: 0,
-		runtime: fullReport.durationSec * 1000
+		total: 0
 	};
 	var errors = [];
 	
@@ -265,22 +269,36 @@ Remote.prototype.getReport = function(fullReport, fullReportCoverage) {
 		if (s.suites) s.suites.forEach(suite);
 	};
 	
-	suite(fullReport);
-	if (fullReportCoverage) {
-		prefix = 'coverage: ';
-		suite(fullReportCoverage);
-		fullReport.description = 'standard';
-		fullReportCoverage.description = 'coverage';
-		fullReport = {
-			suites: [fullReport, fullReportCoverage],
-			durationSec: fullReport.durationSec + fullReportCoverage.durationSec,
-			passed: fullReport.passed && fullReportCoverage.passed
+	var durationSec = 0;
+	var passed = true;
+	
+	for (var i = 0; i < urls.length; i++) {
+		prefix = urls[i].prefix || '';
+		var description = prefix;
+		if (prefix) prefix += ': ';
+		
+		suite(reports[i]);
+		
+		durationSec += reports[i].durationSec;
+		if (urls.length >= 2) {
+			passed = passed && reports[i].passed;
+			reports[i].description = description || 'standard';
+		}
+	}
+	
+	var report = reports[0];
+	if (urls.length >= 2) {
+		report = {
+			suites: reports,
+			durationSec: durationSec,
+			passed: passed
 		};
 	}
+	simple.runtime = durationSec * 1000;
 	
 	return {
 		simple: simple,
-		full: fullReport,
+		full: report,
 		errors: errors
 	};
 };
@@ -355,13 +373,6 @@ Remote.prototype.finalizeReport = function(report) {
 	}
 	
 	return newReport;
-};
-
-Remote.prototype.addUrlParam = function(url, param, key) {
-	var urlModule = require('url');
-	var u = urlModule.parse(url);
-	u.search = (u.search ? u.search + '&' : '?') + encodeURIComponent(param) + '=' + encodeURIComponent(key);
-	return urlModule.format(u);
 };
 
 exports = module.exports = Remote;

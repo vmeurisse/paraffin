@@ -58,16 +58,17 @@ Tests.prototype.run = function(cb) {
 	require('async').series(actions, function(err) {
 		if (this.actions.manualStop) {
 			if (cb) {
-				cb(err, runner);
+				process.stdout.write('', function() {
+					cb(err, runner);
+				});
 			}
 		}
 		if (this.actions.autoStop) {
 			this.stop(function(stopErr) {
 				if (cb) {
-					// Small delay so that all messages get time to be written to console before returning to caller 
-					setTimeout(function() {
+					process.stdout.write('', function() {
 						cb(err || stopErr);
-					}, 100);
+					});
 				}
 			}.bind(this));
 		}
@@ -193,16 +194,36 @@ Tests.prototype.prepareCoverage = function(cb) {
 Tests.prototype.runRemote = function(cb) {
 	this.displayAction('Running remote tests...', true);
 	var Remote = require('./Remote');
-	var remote = new Remote(this.config.remote);
+	var config = Object.create(this.config.remote);
+	if (this.config.coverage && config.url) {
+		config.url = this.processRemoteURL(this.config.coverage.coverageOnly, config.url);
+	}
+	var remote = new Remote(config);
 	if (this.server) {
 		this.server.addPostHandler('/browserData', remote.browserData.bind(remote));
 	}
-	remote.run(!!this.coverage, function(err, status) {
+	remote.run(function(err, status) {
 		for (var key in status) {
 			this.testStatus[key] = status[key];
 		}
 		cb.apply(null, arguments);
 	}.bind(this));
+};
+
+Tests.prototype.processRemoteURL = function(coverageOnly, url) {
+	if (Array.isArray(url)) return url;
+	var utils = require('./utils');
+	if (coverageOnly) {
+		url = [utils.addUrlParam(url, 'coverage', 'true')];
+	} else {
+		url = [{
+			url: url
+		}, {
+			url: utils.addUrlParam(url, 'coverage', 'true'),
+			prefix: 'coverage'
+		}];
+	}
+	return url;
 };
 
 Tests.prototype.displayAction = function(status, newLine) {
