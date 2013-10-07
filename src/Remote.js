@@ -175,7 +175,7 @@ Remote.prototype.browserData = function(data) {
 Remote.prototype.getBrowserName = function(browser) {
 	var name = browser.browserName;
 	if (browser.version) name += ' ' + browser.version;
-	if (browser.platform) name += ' (' + browser.platform + ')';
+	if (browser.platform && browser.platform !== 'ANY') name += ' (' + browser.platform + ')';
 	return name;
 };
 
