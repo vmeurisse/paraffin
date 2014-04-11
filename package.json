@@ -12,7 +12,7 @@
 		"shelljs": "0.2.x",
 		"node-static": "0.7.x",
 		"wd": "0.1.x",
-		"sauce-connect-launcher": "~0.1.11",
+		"sauce-connect-launcher": "~0.4.0",
 		"saucelabs": "~0.0.7",
 		"mocha": "~1.13.0",
 		"istanbul": "0.1.x",
