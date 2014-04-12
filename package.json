@@ -15,7 +15,7 @@
 		"sauce-connect-launcher": "~0.4.0",
 		"saucelabs": "~0.1.0",
 		"mocha": "~1.13.0",
-		"istanbul": "0.1.x",
+		"istanbul": "0.2.x",
 		"async": "~0.2.8",
 		"amdefine": "~0.1.0"
 	},
