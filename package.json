@@ -13,16 +13,16 @@
 		"node-static": "0.7.x",
 		"wd": "0.1.x",
 		"sauce-connect-launcher": "~0.4.0",
-		"saucelabs": "~0.0.7",
+		"saucelabs": "~0.1.0",
 		"mocha": "~1.13.0",
 		"istanbul": "0.1.x",
 		"async": "~0.2.8",
-		"amdefine": "~0.0.5"
+		"amdefine": "~0.1.0"
 	},
 	"devDependencies": {
-		"jake": "0.6.x",
+		"jake": "0.7.x",
 		"glob": "~3.2.6",
-		"smpl-build-test": "0.7.x"
+		"smpl-build-test": "0.8.x"
 	},
 	"repository": {
 		"type": "git",
