@@ -151,7 +151,7 @@ Tests.prototype.startSauceConnect = function(cb) {
 	this.displayAction('Starting Sauce Connect...', true);
 	var SauceConnect = require('./SauceConnect');
 	this.sauceConnect = new SauceConnect(this.config.sauceConnect).start(function(err) {
-		this.displayStatus();
+		this.displayStatus(err);
 		if (cb) cb(err);
 	}.bind(this));
 };
@@ -164,10 +164,10 @@ Tests.prototype.startSauceConnect = function(cb) {
  */
 Tests.prototype.stopSauceConnect = function(cb) {
 	this.displayAction('Stopping Sauce Connect...');
-	this.sauceConnect.stop(function() {
+	this.sauceConnect.stop(function(err) {
 		delete this.sauceConnect;
-		this.displayStatus();
-		if (cb) cb();
+		this.displayStatus(err);
+		if (cb) cb(err);
 	}.bind(this));
 };
 

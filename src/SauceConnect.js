@@ -49,8 +49,12 @@ SauceConnect.prototype.start = function(cb) {
  * @param cb {function}
  */
 SauceConnect.prototype.stop = function(cb) {
-	this.sauceConnect.close(cb);
-	delete this.sauceConnect;
+	if (this.sauceConnect) {
+		this.sauceConnect.close(cb);
+		delete this.sauceConnect;
+	} else {
+		cb();
+	}
 };
 
 exports = module.exports = SauceConnect;
