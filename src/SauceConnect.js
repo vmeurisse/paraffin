@@ -27,7 +27,7 @@ SauceConnect.prototype.start = function(cb) {
 		username: this.config.user,
 		accessKey: this.config.key,
 		verbose: false,
-		logger: function() {}
+		logger: console.log
 	};
 	var sauceConnectLauncher = require('sauce-connect-launcher');
 	sauceConnectLauncher(options, function (err, sauceConnectProcess) {
