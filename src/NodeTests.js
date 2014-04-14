@@ -7,6 +7,7 @@
  * @param config {Object}
  * @param [config.reporter] {String|function} reporter to use for mocha
  * @param [config.globals] {Array.String} List of globals to ignore for the leak detection
+ * @param [config.ignoreLeaks=false] {boolean} Do not detect leaks in the global scope
  * @param config.tests {Array.String} Path of the files to use for tests
  */
 var NodeTests = function(config) {
@@ -35,7 +36,8 @@ NodeTests.prototype.run = function(coverage, cb) {
 	var mocha = new Mocha({
 		ui: 'tdd',
 		reporter: reporter || this.config.reporter,
-		globals: this.config.globals
+		globals: this.config.globals,
+		ignoreLeaks: !!this.config.ignoreLeaks
 	});
 	this.config.tests.forEach(function(file) {
 		// Force reimport
