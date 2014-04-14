@@ -15,6 +15,19 @@ define(['./browserUtils'], function(browserUtils) {
 		var currentSuite = result;
 		var testStart;
 		
+		var failTest = function(result, mochaTest) {
+			result.failedCount = 1;
+			result.passedCount = 0;
+			// Format addition. Used for error reporting in the console.
+			result.mochaTest = {
+				fullTitle: mochaTest.fullTitle(),
+				err: {
+					message: mochaTest.err.message,
+					stack: mochaTest.err.stack
+				}
+			};
+		};
+		
 		runner.on('suite', function(suite) {
 			var newSuite = {
 				description: suite.title,
@@ -52,18 +65,33 @@ define(['./browserUtils'], function(browserUtils) {
 			};
 			if (!t.passed) {
 				currentSuite.passed = false;
-				t.failedCount = 1;
-				t.passedCount = 0;
-				// Format addition. Used for error reporting in the console.
-				t.mochaTest = {
-					fullTitle: test.fullTitle(),
-					err: {
-						message: test.err.message,
-						stack: test.err.stack
-					}
-				};
+				failTest(t, test);
 			}
 			currentSuite.specs.push(t);
+		});
+		
+		runner.on('fail', function(test) {
+			var stack = [];
+			while (test.parent) {
+				stack.push(test);
+				test = test.parent;
+			}
+			
+			var res = result.suites[0];
+			for (var i = stack.length - 1; i >= 0; i--) {
+				test = stack[i];
+				var childs = (i === 0) ? res.specs : res.suites;
+				for (var j = 0; j < childs.length; j++) {
+					if (childs[j].description === test.title) {
+						res = childs[j];
+						res.passed = false;
+						if (i === 0) {
+							failTest(res, test);
+						}
+						break;
+					}
+				}
+			}
 		});
 		
 		runner.on('end', function() {
