@@ -1,6 +1,6 @@
 'use strict';
 
-var colorize = require('./color').auto;
+var chalk = require('chalk');
 /**
  * Run tests on selenium using webdriver protocol
  * 
@@ -99,18 +99,18 @@ Remote.prototype.startBrowser = function(index) {
 		tags: this.tags
 	};
 	browser.on('status', function(info) {
-		console.log('%s: ' + colorize('cyan', '%s'), name, info.trim());
+		console.log('%s: ' + chalk.cyan('%s'), name, info.trim());
 	});
 	
 	browser.on('command', function(meth, path, data) {
 		if (path === '/session/:sessionID/url') path += ' ' + data.url;
-		console.log('%s: > ' + colorize('yellow', '%s') + ': %s', name, meth, path);
+		console.log('%s: > ' + chalk.yellow('%s') + ': %s', name, meth, path);
 	});
 	
 	browser.init(desired, function(err) {
 		var testDone = this.testDone.bind(this, browser, name);
 		if (err) {
-			console.log('%s: ' + colorize('red', '%s') + ' (%s)', name, err.message);
+			console.log('%s: ' + chalk.red('%s') + ' (%s)', name, err.message);
 			console.log(' > Requested browser:', desired);
 			console.log(' > Error:', err);
 			testDone(null);
@@ -228,16 +228,16 @@ Remote.prototype.report = function(sessionId, status, name, done) {
 			}
 		}, function(err) {
 			if (err) {
-				console.log('%s: > job %s: ' + colorize('red', 'unable to set status:'), name, sessionId, err);
+				console.log('%s: > job %s: ' + chalk.red('unable to set status:'), name, sessionId, err);
 			} else {
 				console.log('%s: > job %s marked as %s', name, sessionId,
-						success ? colorize('green', 'passed') : colorize('red', 'failed'));
+						success ? chalk.green('passed') : chalk.red('failed'));
 			}
 			done();
 		});
 	} else {
 		console.log('%s: > job %s: %s', name, sessionId,
-				success ? colorize('green', 'passed') : colorize('red', 'failed'));
+				success ? chalk.green('passed') : chalk.red('failed'));
 		done();
 	}
 };
@@ -328,13 +328,13 @@ Remote.prototype.displayResults = function() {
 		var failed = status.simple && status.simple.failed;
 		
 		if (!ok && !failed) {
-			console.log('    %s: ' +  colorize('red', 'no results'), name);
+			console.log('    %s: ' +  chalk.red('no results'), name);
 			failures++;
 		} else if (failed) {
-			console.log('    %s: ' + colorize('red', '%d/%d failed'), name, failed, ok + failed);
+			console.log('    %s: ' + chalk.red('%d/%d failed'), name, failed, ok + failed);
 			failures++;
 		} else {
-			console.log('    %s: ' + colorize('green', '%d passed'), name, ok);
+			console.log('    %s: ' + chalk.green('%d passed'), name, ok);
 		}
 		
 		if (failed) {
@@ -344,7 +344,7 @@ Remote.prototype.displayResults = function() {
 				console.log();
 				console.log('      %d) %s', ++n, test.fullTitle);
 				if (stack) {
-					console.log(colorize('red', '%s'), stack.replace(/^/gm, '        '));
+					console.log(chalk.red('%s'), stack.replace(/^/gm, '        '));
 					console.log();
 					console.log();
 				}

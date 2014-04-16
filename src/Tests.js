@@ -1,5 +1,4 @@
-
-var colorize = require('./color').auto;
+var chalk = require('chalk');
 
 /**
  * Server used to run unit tests
@@ -233,9 +232,9 @@ Tests.prototype.displayAction = function(status, newLine) {
 
 Tests.prototype.displayStatus = function(err) {
 	if (err) {
-		process.stdout.write('[ ' + colorize('red', 'fail') + ' ]\n');
+		process.stdout.write('[ ' + chalk.red('fail') + ' ]\n');
 	} else {
-		process.stdout.write('[   ' + colorize('green', 'ok') + ' ]\n');
+		process.stdout.write('[   ' + chalk.green('ok') + ' ]\n');
 	}
 };
 
