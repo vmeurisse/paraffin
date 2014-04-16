@@ -35,5 +35,7 @@
 		"doc": "jake doc --trace"
 	},
 	"main": "src/paraffin.js",
-	"engine": "node >= 0.8.0"
+	"engines": {
+		"node": ">=0.8.0"
+	}
 }
