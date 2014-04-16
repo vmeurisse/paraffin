@@ -9,20 +9,20 @@
 		"url": "https://github.com/vmeurisse/paraffin/issues"
 	},
 	"dependencies": {
+		"amdefine": "~0.1.0",
+		"async": "0.x",
 		"chalk": "0.4.x",
-		"shelljs": "0.2.x",
+		"istanbul": "0.2.x",
+		"mocha": "~1.18.2",
 		"node-static": "0.7.x",
-		"wd": "0.1.x",
 		"sauce-connect-launcher": "~0.4.2",
 		"saucelabs": "~0.1.0",
-		"mocha": "~1.18.2",
-		"istanbul": "0.2.x",
-		"async": "0.x",
-		"amdefine": "~0.1.0"
+		"shelljs": "0.2.x",
+		"wd": "0.1.x"
 	},
 	"devDependencies": {
-		"jake": "0.7.x",
 		"glob": "~3.2.6",
+		"jake": "0.7.x",
 		"smpl-build-test": "0.8.x"
 	},
 	"repository": {
